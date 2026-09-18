@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>คะแนน KPI บตน.2 ยะลา</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#fafaf8; --surface:#ffffff; --line:#ebe9e3; --line-2:#dedbd2;
+  --ink:#1c1c1a; --ink-2:#5b5a55; --ink-3:#9a988f;
+  --accent:#ffd100; --accent-soft:#fff6c7; --accent-ink:#1c1c1a;
+  --good:#1f7a4a; --muted-bg:#f2f1ec;
+  --f:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+  --m:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141413; --surface:#1b1b19; --line:#2a2a27; --line-2:#36352f;
+    --ink:#f1efe8; --ink-2:#bdbab0; --ink-3:#7f7d75;
+    --accent-soft:#3a3310; --good:#74d19f; --muted-bg:#232320;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141413; --surface:#1b1b19; --line:#2a2a27; --line-2:#36352f;
+  --ink:#f1efe8; --ink-2:#bdbab0; --ink-3:#7f7d75;
+  --accent-soft:#3a3310; --good:#74d19f; --muted-bg:#232320;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding-inline:16px;padding-block:28px 64px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+.num{font-family:var(--m);font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:22px}
+.kicker{font-size:12px;color:var(--ink-3);letter-spacing:.04em}
+h1{font-size:clamp(22px,3vw,28px);font-weight:600;margin:2px 0 0;line-height:1.25;display:flex;align-items:center;gap:10px}
+h1::before{content:"";width:10px;height:10px;border-radius:2px;background:var(--accent);display:inline-block}
+.period{font-size:12.5px;color:var(--ink-3);text-align:right}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12.5px;color:var(--ink-2);padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:18px}
+.legend b{font-family:var(--m);font-weight:500;color:var(--ink);margin-right:5px}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+.search{flex:1 1 220px;max-width:320px;position:relative}
+.search input{width:100%;font:inherit;font-size:14px;padding:8px 12px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);color:var(--ink)}
+select{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--surface);color:var(--ink);max-width:100%}
+.count{font-size:12.5px;color:var(--ink-3);margin-left:auto}
+
+/* people list */
+.list{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:grid;grid-template-columns:minmax(0,1fr) repeat(4,74px) 118px 20px;gap:8px;align-items:center;padding:12px 16px;border-top:1px solid var(--line)}
+.row.head{border-top:none;padding-block:10px;font-size:12px;color:var(--ink-3);background:var(--surface)}
+.row.head button{background:none;border:none;padding:0;cursor:pointer;color:inherit;text-align:right;width:100%;font-size:12px}
+.row.head button.l{text-align:left}
+.row.head button[aria-sort]{color:var(--ink);font-weight:500}
+.row.head button[aria-sort=descending]::after{content:" ↓"}
+.row.head button[aria-sort=ascending]::after{content:" ↑"}
+button.row{width:100%;background:none;border-left:none;border-right:none;border-bottom:none;text-align:left;cursor:pointer}
+button.row:hover{background:var(--muted-bg)}
+.row .v{text-align:right;font-family:var(--m);font-size:13.5px;font-variant-numeric:tabular-nums}
+.row .v.zero{color:var(--ink-3)}
+.row .who{min-width:0}
+.row .who .n{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.row .who .c{font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.row .go{color:var(--ink-3);text-align:right}
+.row .v .u{display:none}
+.star{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:6px;vertical-align:middle}
+@media (max-width:680px){
+  .row{grid-template-columns:repeat(5,minmax(0,1fr)) 16px;row-gap:6px;padding:12px 14px}
+  .row .who{grid-column:1/-1}
+  .row .go{grid-row:1;grid-column:6}
+  .row .who{grid-column:1/6}
+  .row.head{display:none}
+  .row .v{text-align:left;font-size:13px}
+  .row .v .u{display:block;font-family:var(--f);font-size:10.5px;color:var(--ink-3);white-space:nowrap}
+}
+
+/* detail */
+.back{background:none;border:none;padding:6px 0;cursor:pointer;color:var(--ink-2);font-size:13.5px;margin-bottom:14px}
+.back:hover{color:var(--ink)}
+.pname{font-size:clamp(24px,3.4vw,30px);font-weight:600;margin:0;line-height:1.25}
+.pcenter{color:var(--ink-3);font-size:13.5px;margin-top:2px}
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:20px 0 26px}
+.stat{background:var(--surface);padding:14px 16px}
+.stat .k{font-size:12px;color:var(--ink-3)}
+.stat .k b{font-family:var(--m);font-weight:500;color:var(--ink-2);margin-right:4px}
+.stat .x{font-family:var(--m);font-size:clamp(20px,2.6vw,26px);font-weight:500;margin-top:2px;font-variant-numeric:tabular-nums}
+@media (max-width:680px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:last-child{grid-column:1/-1}}
+h3{font-size:15px;font-weight:600;margin:0 0 10px}
+.days{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
+.day{font-family:var(--m);font-size:12.5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line-2);color:var(--ink-3);background:var(--surface)}
+.day.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.log{border-top:1px solid var(--line)}
+.dgroup{display:grid;grid-template-columns:96px minmax(0,1fr);gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.dlabel{font-family:var(--m);font-size:13px;color:var(--ink-2);padding-top:2px}
+.dlabel small{display:block;font-family:var(--f);font-size:11.5px;color:var(--ink-3)}
+.items{display:flex;flex-direction:column;gap:12px;min-width:0}
+.item{min-width:0}
+.item .h{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px}
+.item .ref{font-family:var(--m);font-size:13.5px;font-weight:500}
+.item .res{font-size:13px;color:var(--ink-2)}
+.item .txt{font-size:13px;color:var(--ink-2);margin-top:3px;overflow-wrap:anywhere}
+.item .team{font-size:12px;color:var(--ink-3);margin-top:3px}
+.item .note{font-size:12px;color:var(--ink-3);margin-top:2px;font-style:italic}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{font-size:11.5px;padding:1px 8px;border-radius:5px;background:var(--accent-soft);color:var(--ink);font-family:var(--m)}
+.chip.none{background:var(--muted-bg);color:var(--ink-3);font-family:var(--f)}
+@media (max-width:560px){.dgroup{grid-template-columns:1fr;gap:6px}}
+.foot{margin-top:34px;font-size:12px;color:var(--ink-3);max-width:75ch}
+.foot p{margin:4px 0}
+.empty{padding:24px;text-align:center;color:var(--ink-3)}
+
+.boot{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;color:var(--ink-2)}
+.boot .dot{width:10px;height:10px;border-radius:2px;background:var(--accent);animation:pulse 1s ease-in-out infinite alternate}
+.boot h2{font-size:17px;font-weight:600;margin:6px 0 0;color:var(--ink)}
+.boot p{margin:0;max-width:36ch;font-size:13.5px}
+.boot code{font-family:var(--m);background:var(--muted-bg);padding:1px 6px;border-radius:4px}
+.viewer{font-size:12px;color:var(--ink-3);margin-top:2px}
+@keyframes pulse{from{opacity:.35}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.boot .dot{animation:none}}
+</style>
+
+
+<style>body{margin:0} [hidden]{display:none!important} .wrap{padding-top:max(28px, env(safe-area-inset-top))}</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="boot" class="boot" role="status"><span class="dot"></span><h2 id="boot-title">กำลังตรวจสอบสิทธิ์</h2><p id="boot-msg">เปิดผ่าน LINE ของคุณ</p></div>
+  <div id="view-list" hidden>
+    <header class="top">
+      <div>
+        <div class="kicker">NT ส่วนขายและบริการลูกค้า ยะลา</div>
+        <h1>คะแนนรายบุคคล KPI 4.3–4.6</h1>
+      </div>
+      <div><div class="period" id="period"></div><div class="viewer" id="viewer"></div></div>
+    </header>
+    <div class="legend">
+      <span><b>4.3</b>วันออกงาน (1/วัน/คน)</span>
+      <span><b>4.4</b>ขายซิม (เลขหมาย)</span>
+      <span><b>4.5</b>วงจรใหม่ / ชำระแล้วใช้ต่อ</span>
+      <span><b>4.6</b>เก็บอุปกรณ์ · เงินหนี้สูญ</span>
+      <span style="color:var(--ink-3)">4.4–4.6 หารตามจำนวนคนในทีม</span>
+    </div>
+    <div class="controls">
+      <div class="search"><input id="q" type="search" placeholder="ค้นหาชื่อ" aria-label="ค้นหาชื่อ" autocomplete="off"></div>
+      <select id="month" aria-label="เดือน"></select>
+      <select id="center" aria-label="ศูนย์"></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="list" role="list" id="list"></div>
+    <div class="foot">
+      <p>คลิกชื่อเพื่อดูงานทั้งหมดของแต่ละคน · คะแนนนับตามหลักฐานในรายงาน LINE ตัดรายงานซ้ำแล้ว · ปิดชื่อและเบอร์โทรลูกค้าแล้ว · <span class="star"></span> = ไม่พบในทะเบียนพนักงาน</p>
+    </div>
+  </div>
+
+  <div id="view-person" hidden></div>
+</div>
+
+
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script>
+/* ===== ตั้งค่า (แก้ 2 บรรทัดนี้หลังสร้าง LIFF และ deploy Apps Script) ===== */
+const CONFIG = {
+  LIFF_ID: '2011665434-rMbcebZR',                                   // จาก LINE Developers > LINE Login channel > LIFF
+  API_URL: 'https://script.google.com/macros/s/AKfycbxCqMPqDE6U7MtknloePnM10xhuyQQoinylnKk5mtj8X4OpqY_x3uqo2OWKRzWipTt_mA/exec'  // URL /exec ของ Apps Script
+};
+/* ====================================================================== */
+
+function bootMsg(title, msg) {
+  document.getElementById('boot-title').textContent = title;
+  const p = document.getElementById('boot-msg'); p.replaceChildren();
+  if (msg instanceof Node) p.appendChild(msg); else p.textContent = msg || '';
+}
+
+async function boot() {
+  try {
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    const idToken = liff.getIDToken();
+    if (!idToken) { bootMsg('เข้าสู่ระบบไม่สำเร็จ', 'ลองปิดแล้วเปิดใหม่จากเมนูในแชท NT Yala Dev'); return; }
+    bootMsg('กำลังโหลดคะแนน', '');
+    // text/plain เพื่อไม่ให้เกิด CORS preflight กับ Apps Script
+    const res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ idToken }) });
+    const out = await res.json();
+    if (!out.ok) {
+      if (out.error === 'NOT_REGISTERED') {
+        const f = document.createDocumentFragment();
+        f.append('บัญชี LINE นี้ยังไม่ได้ลงทะเบียนกับบอท พิมพ์ ', Object.assign(document.createElement('code'), {textContent: '/ชื่อ ชื่อ นามสกุล'}), ' ในแชท NT Yala Dev แล้วรอ ผจ. ยืนยัน');
+        bootMsg('ยังไม่มีสิทธิ์ดูคะแนน', f);
+      } else if (out.error === 'TOKEN_EXPIRED' || out.error === 'TOKEN_INVALID') {
+        liff.logout(); bootMsg('หมดเวลาเข้าสู่ระบบ', 'ปิดหน้านี้แล้วเปิดใหม่จากเมนูในแชท');
+      } else {
+        bootMsg('โหลดข้อมูลไม่สำเร็จ', 'ลองใหม่อีกครั้ง ถ้ายังไม่ได้ แจ้งผู้ดูแลระบบ (' + out.error + ')');
+      }
+      return;
+    }
+    window.DATA = out.data;
+    document.getElementById('boot').hidden = true;
+    document.getElementById('viewer').textContent = 'ผู้ดู: ' + out.viewer.name + ' · อัปเดต ' + (out.data.updated || '');
+    app();
+  } catch (err) {
+    bootMsg('เปิดหน้านี้ไม่สำเร็จ', 'กรุณาเปิดจากเมนูในแชท NT Yala Dev');
+    console.error(err);
+  }
+}
+
+function app() {
+const DATA = window.DATA;
+
+const $ = s => document.querySelector(s);
+const el = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+const nf2 = new Intl.NumberFormat('th-TH', {maximumFractionDigits: 2});
+const nfB = new Intl.NumberFormat('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const TH_M = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const TH_D = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+const dShort = s => { const [y,m,d] = s.split('-').map(Number); return `${d} ${TH_M[m-1]}`; };
+const dDow = s => { const [y,m,d] = s.split('-').map(Number); return TH_D[new Date(y, m-1, d).getDay()]; };
+const home = n => (DATA.home[n] || '').replace(' *', '');
+const unknown = n => (DATA.home[n] || '').endsWith('*');
+
+// aggregate per person (for the selected month)
+function aggregate(month) {
+  const P = new Map();
+  DATA.events.forEach(e => {
+    if (month && !e.d.startsWith(month)) return;
+    const k = e.p.length || 1;
+    e.p.forEach(n => {
+      if (!P.has(n)) P.set(n, {name: n, days: new Set(), s44: 0, s45: 0, e46: 0, m46: 0, ev: []});
+      const p = P.get(n);
+      p.ev.push(e);
+      if (e.s43) p.days.add(e.d);
+      p.s44 += e.s44 / k; p.s45 += e.s45 / k; p.e46 += e.e46 / k; p.m46 += e.m46 / k;
+    });
+  });
+  return [...P.values()].map(p => ({...p, s43: p.days.size}))
+    .filter(p => p.s43 || p.s44 || p.s45 || p.e46 || p.m46);
+}
+let people = aggregate('');
+const TH_MF = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const mLabel = m => { const [y, mm] = m.split('-').map(Number); return `${TH_MF[mm-1]} ${y+543}`; };
+const S = {q: '', center: '', month: '', sort: {k: 's43', dir: -1}};
+$('#period').textContent = `ข้อมูล ${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0,4)+543}`;
+const centers = [...new Set(people.map(p => home(p.name)).filter(Boolean))].sort((a,b) => a.localeCompare(b,'th'));
+const sel = $('#center'); sel.appendChild(new Option('ทุกศูนย์', ''));
+centers.forEach(c => sel.appendChild(new Option(c, c)));
+sel.onchange = () => { S.center = sel.value; renderList(); };
+const msel = $('#month'); msel.appendChild(new Option('ทุกเดือน', ''));
+[...new Set(DATA.events.map(e => e.d.slice(0, 7)))].sort().reverse().forEach(m => msel.appendChild(new Option(mLabel(m), m)));
+msel.onchange = () => { S.month = msel.value; people = aggregate(S.month); renderPeriod(); renderList(); };
+function renderPeriod() { $('#period').textContent = S.month ? `เดือน${mLabel(S.month)}` : `ข้อมูล ${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0,4)+543}`; }
+renderPeriod();
+$('#q').oninput = e => { S.q = e.target.value.trim(); renderList(); };
+
+const COLS = [['s43','4.3','วัน'],['s44','4.4','ซิม'],['s45','4.5','วงจร'],['e46','4.6','อุปกรณ์'],['m46','4.6 เงิน (บาท)','฿']];
+const fmt = (k, v) => k === 'm46' ? nfB.format(v) : (k === 's43' ? String(v) : nf2.format(v));
+
+function renderList() {
+  const list = $('#list'); list.replaceChildren();
+  const head = el('div', 'row head');
+  const hb = (k, label, cls) => { const b = el('button', cls || '', label); b.type = 'button';
+    if (S.sort.k === k) b.setAttribute('aria-sort', S.sort.dir > 0 ? 'ascending' : 'descending');
+    b.onclick = () => { S.sort = {k, dir: S.sort.k === k ? -S.sort.dir : (k === 'name' ? 1 : -1)}; renderList(); }; return b; };
+  head.appendChild(hb('name', 'ชื่อ', 'l'));
+  COLS.forEach(([k, l, s]) => head.appendChild(hb(k, k === 'e46' ? '4.6 อุปกรณ์' : l)));
+  head.appendChild(el('span'));
+  list.appendChild(head);
+  let rows = people.filter(p => (!S.center || home(p.name) === S.center) && (!S.q || p.name.includes(S.q)));
+  const {k, dir} = S.sort;
+  rows.sort((a, b) => (k === 'name' ? a.name.localeCompare(b.name, 'th') : a[k] - b[k]) * dir || b.s43 - a.s43 || a.name.localeCompare(b.name, 'th'));
+  $('#count').textContent = `${rows.length} คน`;
+  if (!rows.length) { list.appendChild(el('div', 'empty', 'ไม่พบรายชื่อ')); return; }
+  rows.forEach(p => {
+    const r = el('button', 'row'); r.type = 'button'; r.setAttribute('role', 'listitem');
+    const who = el('span', 'who'); const n = el('span', 'n', p.name);
+    if (unknown(p.name)) { const st = el('span', 'star'); st.title = 'ไม่พบในทะเบียนพนักงาน'; n.appendChild(st); }
+    who.append(n, el('span', 'c', home(p.name) || '—')); r.appendChild(who);
+    COLS.forEach(([k, l, s]) => { const v = el('span', 'v' + (p[k] ? '' : ' zero')); v.append(el('span', 'u', (k === 'm46' ? '4.6' : l) + ' ' + s), document.createTextNode(p[k] ? fmt(k, p[k]) : '–')); r.appendChild(v); });
+    r.appendChild(el('span', 'go', '›'));
+    r.onclick = () => { location.hash = 'p=' + encodeURIComponent(p.name); };
+    list.appendChild(r);
+  });
+}
+
+function chipsFor(e, k) {
+  const c = [];
+  if (e.s43) c.push('4.3 ออกงาน');
+  if (e.s44) c.push(`4.4 ซิม ${nf2.format(e.s44 / k)}`);
+  if (e.s45) c.push(`4.5 ${nf2.format(e.s45 / k)}`);
+  if (e.e46) c.push(`4.6 อุปกรณ์ ${nf2.format(e.e46 / k)}`);
+  if (e.m46) c.push(`4.6 ฿${nfB.format(e.m46 / k)}`);
+  return c;
+}
+
+function renderPerson(name) {
+  const p = people.find(x => x.name === name);
+  const v = $('#view-person'); v.replaceChildren();
+  if (!p) { location.hash = ''; return; }
+  const back = el('button', 'back', '‹ กลับไปหน้ารายชื่อ'); back.type = 'button'; back.onclick = () => history.length > 1 ? history.back() : (location.hash = '');
+  v.append(back, el('h2', 'pname', p.name), el('div', 'pcenter', (home(p.name) || '—') + (unknown(p.name) ? ' · ไม่พบในทะเบียนพนักงาน (ศูนย์ประเมินจากงาน)' : '') + ' · ' + (S.month ? 'เดือน' + mLabel(S.month) : 'ทุกเดือน')));
+  const st = el('div', 'stats');
+  [['4.3','วันออกงาน', String(p.s43)],['4.4','ซิม', nf2.format(p.s44)],['4.5','วงจรใหม่/ใช้ต่อ', nf2.format(p.s45)],['4.6','อุปกรณ์', nf2.format(p.e46)],['4.6','เงินหนี้สูญ (บาท)', nfB.format(p.m46)]]
+    .forEach(([a, b, x]) => { const s = el('div', 'stat'); const k = el('div', 'k'); k.append(el('b', null, a), document.createTextNode(b)); s.append(k, el('div', 'x', x)); st.appendChild(s); });
+  v.appendChild(st);
+
+  const dates = [...new Set(p.ev.map(e => e.d))].sort();
+  v.appendChild(el('h3', null, `วันที่มีรายงาน (${dates.length} วัน · ได้ 4.3 ${p.s43} วัน)`));
+  const days = el('div', 'days');
+  dates.forEach(d => { const c = el('span', 'day' + (p.days.has(d) ? ' on' : ''), dShort(d)); c.title = p.days.has(d) ? 'ได้ 4.3' : 'ไม่ได้ 4.3'; days.appendChild(c); });
+  v.appendChild(days);
+
+  v.appendChild(el('h3', null, 'รายละเอียดงาน'));
+  const log = el('div', 'log');
+  const byDate = new Map(); p.ev.forEach(e => { if (!byDate.has(e.d)) byDate.set(e.d, []); byDate.get(e.d).push(e); });
+  [...byDate.keys()].sort().reverse().forEach(d => {
+    const g = el('div', 'dgroup'); const lab = el('div', 'dlabel', dShort(d)); lab.appendChild(el('small', null, dDow(d) + (p.days.has(d) ? ' · ออกงาน' : ''))); g.appendChild(lab);
+    const items = el('div', 'items');
+    byDate.get(d).sort((a, b) => (a.t > b.t ? 1 : -1) || a.id.localeCompare(b.id)).forEach(e => {
+      const k = e.p.length || 1;
+      const it = el('div', 'item'); const h = el('div', 'h');
+      h.appendChild(el('span', 'ref', e.t === 'c' ? e.id : 'กิจกรรม KPI ' + e.k));
+      if (e.t === 'c' && e.r) h.appendChild(el('span', 'res', e.r));
+      it.appendChild(h);
+      it.appendChild(el('div', 'txt', e.n));
+      const others = e.p.filter(x => x !== p.name);
+      it.appendChild(el('div', 'team', k > 1 ? `ทีม ${k} คน · ${others.join(', ')}` : 'ทำคนเดียว / ไม่ระบุทีม'));
+      const chips = el('div', 'chips'); const cs = chipsFor(e, k);
+      if (cs.length) cs.forEach(c => chips.appendChild(el('span', 'chip', c))); else chips.appendChild(el('span', 'chip none', 'ไม่ได้คะแนน'));
+      it.appendChild(chips);
+      if (e.note) it.appendChild(el('div', 'note', e.note));
+      items.appendChild(it);
+    });
+    g.appendChild(items); log.appendChild(g);
+  });
+  v.appendChild(log);
+  v.appendChild(el('div', 'foot', 'ตัวเลขบนป้ายคะแนน = ส่วนของคนนี้หลังหารตามจำนวนคนในทีม · 4.3 ได้วันละ 1 แต้มไม่ว่าจะออกกี่งาน'));
+}
+
+function route() {
+  const m = location.hash.match(/^#p=(.+)$/);
+  if (m) { $('#view-list').hidden = true; $('#view-person').hidden = false; renderPerson(decodeURIComponent(m[1])); window.scrollTo(0, 0); }
+  else { $('#view-person').hidden = true; $('#view-list').hidden = false; renderList(); }
+}
+window.addEventListener('hashchange', route);
+route();
+
+}
+boot();
+</script>
+</body>
+</html>
