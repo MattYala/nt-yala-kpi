@@ -117,6 +117,11 @@ h3{font-size:15px;font-weight:600;margin:0 0 10px}
 .foot{margin-top:34px;font-size:12px;color:var(--ink-3);max-width:75ch}
 .foot p{margin:4px 0}
 .empty{padding:24px;text-align:center;color:var(--ink-3)}
+.row.me{background:var(--accent-soft);box-shadow:inset 4px 0 0 var(--accent);border-top:none}
+button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
+.row.me + .row{border-top:2px solid var(--line-2)}
+.me-tag{display:inline-block;font-size:11px;font-weight:600;line-height:1.6;background:var(--accent);color:var(--accent-ink);border-radius:4px;padding:0 7px;margin-left:8px;vertical-align:1px;white-space:nowrap}
+.row.me .who .n,.row.me .who .c{white-space:normal}
 
 .boot{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:24px;color:var(--ink-2)}
 .boot .dot{width:10px;height:10px;border-radius:2px;background:var(--accent);animation:pulse 1s ease-in-out infinite alternate}
@@ -202,7 +207,7 @@ async function boot() {
       }
       return;
     }
-    window.DATA = out.data;
+    window.DATA = out.data; window.VIEWER = out.viewer || {};
     document.getElementById('boot').hidden = true;
     document.getElementById('viewer').textContent = 'ผู้ดู: ' + out.viewer.name + ' · อัปเดต ' + (out.data.updated || '');
     app();
@@ -225,6 +230,10 @@ const dShort = s => { const [y,m,d] = s.split('-').map(Number); return `${d} ${T
 const dDow = s => { const [y,m,d] = s.split('-').map(Number); return TH_D[new Date(y, m-1, d).getDay()]; };
 const home = n => (DATA.home[n] || '').replace(' *', '');
 const unknown = n => (DATA.home[n] || '').endsWith('*');
+const norm = s => String(s || '').replace(/^\s*(นางสาว|น\.ส\.|นาย|นาง|คุณ)\s*/, '').replace(/\s+/g, '');
+const allNames = [...new Set([...Object.keys(DATA.home), ...DATA.events.flatMap(e => e.p)])];
+const ME = allNames.find(n => norm(n) === norm(window.VIEWER.name)) || null;
+const meTag = () => el('span', 'me-tag', 'ผลงานของคุณ');
 
 // aggregate per person (for the selected month)
 function aggregate(month) {
@@ -276,17 +285,33 @@ function renderList() {
   const {k, dir} = S.sort;
   rows.sort((a, b) => (k === 'name' ? a.name.localeCompare(b.name, 'th') : a[k] - b[k]) * dir || b.s43 - a.s43 || a.name.localeCompare(b.name, 'th'));
   $('#count').textContent = `${rows.length} คน`;
-  if (!rows.length) { list.appendChild(el('div', 'empty', 'ไม่พบรายชื่อ')); return; }
-  rows.forEach(p => {
-    const r = el('button', 'row'); r.type = 'button'; r.setAttribute('role', 'listitem');
+  const makeRow = (p, isMe, sub) => {
+    const r = el('button', 'row' + (isMe ? ' me' : '')); r.type = 'button'; r.setAttribute('role', 'listitem');
     const who = el('span', 'who'); const n = el('span', 'n', p.name);
     if (unknown(p.name)) { const st = el('span', 'star'); st.title = 'ไม่พบในทะเบียนพนักงาน'; n.appendChild(st); }
-    who.append(n, el('span', 'c', home(p.name) || '—')); r.appendChild(who);
+    if (isMe) n.appendChild(meTag());
+    who.append(n, el('span', 'c', sub || home(p.name) || '—')); r.appendChild(who);
     COLS.forEach(([k, l, s]) => { const v = el('span', 'v' + (p[k] ? '' : ' zero')); v.append(el('span', 'u', (k === 'm46' ? '4.6' : l) + ' ' + s), document.createTextNode(p[k] ? fmt(k, p[k]) : '–')); r.appendChild(v); });
     r.appendChild(el('span', 'go', '›'));
     r.onclick = () => { location.hash = 'p=' + encodeURIComponent(p.name); };
-    list.appendChild(r);
-  });
+    return r;
+  };
+  // แถวของเจ้าของ LINE ที่เปิดดู: ปักไว้บนสุดเสมอ
+  if (ME) {
+    const me = people.find(p => p.name === ME);
+    if (me) {
+      const ranked = [...people].sort((a, b) => (k === 'name' ? 0 : (a[k] - b[k]) * dir) || b.s43 - a.s43 || a.name.localeCompare(b.name, 'th'));
+      const rk = ranked.findIndex(p => p.name === ME) + 1;
+      const colName = {name: 'ชื่อ', s43: '4.3', s44: '4.4', s45: '4.5', e46: '4.6 อุปกรณ์', m46: '4.6 เงิน'}[k];
+      list.appendChild(makeRow(me, true, (home(ME) || '—') + (k === 'name' ? '' : ` · อันดับ ${rk} จาก ${ranked.length} คน (เรียงตาม ${colName})`)));
+    } else {
+      const r = el('div', 'row me'); const who = el('span', 'who'); const n = el('span', 'n', ME); n.appendChild(meTag());
+      who.append(n, el('span', 'c', 'ยังไม่มีคะแนนในช่วงที่เลือก')); r.appendChild(who); list.appendChild(r);
+    }
+    rows = rows.filter(p => p.name !== ME);
+  }
+  if (!rows.length) { list.appendChild(el('div', 'empty', 'ไม่พบรายชื่อ')); return; }
+  rows.forEach(p => list.appendChild(makeRow(p, false)));
 }
 
 function chipsFor(e, k) {
@@ -304,7 +329,8 @@ function renderPerson(name) {
   const v = $('#view-person'); v.replaceChildren();
   if (!p) { location.hash = ''; return; }
   const back = el('button', 'back', '‹ กลับไปหน้ารายชื่อ'); back.type = 'button'; back.onclick = () => history.length > 1 ? history.back() : (location.hash = '');
-  v.append(back, el('h2', 'pname', p.name), el('div', 'pcenter', (home(p.name) || '—') + (unknown(p.name) ? ' · ไม่พบในทะเบียนพนักงาน (ศูนย์ประเมินจากงาน)' : '') + ' · ' + (S.month ? 'เดือน' + mLabel(S.month) : 'ทุกเดือน')));
+  const pn = el('h2', 'pname', p.name); if (p.name === ME) pn.appendChild(meTag());
+  v.append(back, pn, el('div', 'pcenter', (home(p.name) || '—') + (unknown(p.name) ? ' · ไม่พบในทะเบียนพนักงาน (ศูนย์ประเมินจากงาน)' : '') + ' · ' + (S.month ? 'เดือน' + mLabel(S.month) : 'ทุกเดือน')));
   const st = el('div', 'stats');
   [['4.3','วันออกงาน', String(p.s43)],['4.4','ซิม', nf2.format(p.s44)],['4.5','วงจรใหม่/ใช้ต่อ', nf2.format(p.s45)],['4.6','อุปกรณ์', nf2.format(p.e46)],['4.6','เงินหนี้สูญ (บาท)', nfB.format(p.m46)]]
     .forEach(([a, b, x]) => { const s = el('div', 'stat'); const k = el('div', 'k'); k.append(el('b', null, a), document.createTextNode(b)); s.append(k, el('div', 'x', x)); st.appendChild(s); });
