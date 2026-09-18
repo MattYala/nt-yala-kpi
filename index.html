@@ -207,7 +207,7 @@ async function boot() {
     document.getElementById('viewer').textContent = 'ผู้ดู: ' + out.viewer.name + ' · อัปเดต ' + (out.data.updated || '');
     app();
   } catch (err) {
-    bootMsg('เปิดหน้านี้ไม่สำเร็จ', 'กรุณาเปิดจากเมนูในแชท NT Yala Dev');
+    bootMsg('เปิดหน้านี้ไม่สำเร็จ', 'กรุณาเปิดจากเมนูในแชท NT Yala Dev · รายละเอียด: ' + ((err && (err.code || err.name)) || '') + ' ' + ((err && err.message) || String(err)).slice(0, 160));
     console.error(err);
   }
 }
