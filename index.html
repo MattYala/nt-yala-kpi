@@ -188,7 +188,7 @@ async function boot() {
     if (!idToken) { bootMsg('เข้าสู่ระบบไม่สำเร็จ', 'ลองปิดแล้วเปิดใหม่จากเมนูในแชท NT Yala Dev'); return; }
     bootMsg('กำลังโหลดคะแนน', '');
     // text/plain เพื่อไม่ให้เกิด CORS preflight กับ Apps Script
-    const res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ idToken }) });
+    let res; for (let i = 0; i < 2; i++) { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 25000); try { window.STAGE = 'fetch' + (i + 1); res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ idToken }), signal: ac.signal, cache: 'no-store' }); clearTimeout(t); break; } catch (e) { clearTimeout(t); if (i) throw e; } } window.STAGE = 'json';
     const out = await res.json();
     if (!out.ok) {
       if (out.error === 'NOT_REGISTERED') {
@@ -207,7 +207,7 @@ async function boot() {
     document.getElementById('viewer').textContent = 'ผู้ดู: ' + out.viewer.name + ' · อัปเดต ' + (out.data.updated || '');
     app();
   } catch (err) {
-    bootMsg('เปิดหน้านี้ไม่สำเร็จ', 'กรุณาเปิดจากเมนูในแชท NT Yala Dev · รายละเอียด: ' + ((err && (err.code || err.name)) || '') + ' ' + ((err && err.message) || String(err)).slice(0, 160));
+    bootMsg('เปิดหน้านี้ไม่สำเร็จ', 'กรุณาเปิดจากเมนูในแชท NT Yala Dev · รายละเอียด: [' + (window.STAGE || 'init') + '] ' + ((err && (err.code || err.name)) || '') + ' ' + ((err && err.message) || String(err)).slice(0, 160));
     console.error(err);
   }
 }
