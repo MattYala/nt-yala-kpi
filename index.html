@@ -188,8 +188,8 @@ async function boot() {
     if (!idToken) { bootMsg('เข้าสู่ระบบไม่สำเร็จ', 'ลองปิดแล้วเปิดใหม่จากเมนูในแชท NT Yala Dev'); return; }
     bootMsg('กำลังโหลดคะแนน', '');
     // text/plain เพื่อไม่ให้เกิด CORS preflight กับ Apps Script
-    let res; for (let i = 0; i < 2; i++) { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 25000); try { window.STAGE = 'fetch' + (i + 1); res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ idToken }), signal: ac.signal, cache: 'no-store' }); clearTimeout(t); break; } catch (e) { clearTimeout(t); if (i) throw e; } } window.STAGE = 'json';
-    const out = await res.json();
+    let out; for (let i = 0; i < 3; i++) { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 30000); try { window.STAGE = 'fetch' + (i + 1); const res = await fetch(CONFIG.API_URL, { method: 'POST', body: JSON.stringify({ idToken }), signal: ac.signal, cache: 'no-store' }); window.STAGE = 'json' + (i + 1); const txt = await res.text(); clearTimeout(t); out = JSON.parse(txt); break; } catch (e) { clearTimeout(t); if (i === 2) throw e; await new Promise(r => setTimeout(r, 800)); } }
+    if (out.dataGz) { window.STAGE = 'unzip'; const bin = Uint8Array.from(atob(out.dataGz), c => c.charCodeAt(0)); out.data = await new Response(new Blob([bin]).stream().pipeThrough(new DecompressionStream('gzip'))).json(); }
     if (!out.ok) {
       if (out.error === 'NOT_REGISTERED') {
         const f = document.createDocumentFragment();
