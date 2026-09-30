@@ -134,7 +134,23 @@ button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
 </style>
 
 
-<style>body{margin:0} [hidden]{display:none!important} .wrap{padding-top:max(28px, env(safe-area-inset-top))}</style>
+<style>body{margin:0} [hidden]{display:none!important} .wrap{padding-top:max(28px, env(safe-area-inset-top))}.xp-open{overflow:hidden}
+.xp-ov{position:fixed;inset:0;z-index:1000;overflow:auto;background:#fff;color:#141413;-webkit-overflow-scrolling:touch}
+.xp-bar{position:sticky;top:0;display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;background:#f3f1ea;border-bottom:1px solid #ddd}
+.xp-btn{font:inherit;font-size:14px;padding:8px 14px;border-radius:8px;border:1px solid #1d4f7a;background:#1d4f7a;color:#fff;cursor:pointer}
+.xp-btn.ghost{background:#fff;color:#1d4f7a}
+.xp-doc{max-width:980px;margin:0 auto;padding:16px}
+.xp-doc h1{font-size:22px;margin:4px 0}.xp-doc h2{font-size:16px;margin:22px 0 8px;border-bottom:2px solid #F6B10A;padding-bottom:4px}
+.xp-org{font-size:12px;color:#555}.xp-sub{color:#444;margin-bottom:10px}
+.xp-sum,.xp-t{width:100%;border-collapse:collapse;font-size:13px}
+.xp-sum th,.xp-sum td,.xp-t th,.xp-t td{border:1px solid #ccc;padding:6px;vertical-align:top;text-align:left}
+.xp-sum th,.xp-t th{background:#f3f1ea;font-weight:600}.xp-sum td{font-size:16px;font-weight:600}
+.xp-t .nw{white-space:nowrap}.xp-res{color:#1d4f7a;margin-top:2px}.xp-team{color:#666;font-size:12px;margin-top:2px}
+.xp-t a{color:#1d4f7a}.xp-foot{margin-top:16px;font-size:12px;color:#666}
+.pexp{font:inherit;font-size:14px;margin:8px 0 0;padding:8px 14px;border-radius:8px;border:1px solid #1d4f7a;background:#1d4f7a;color:#fff;cursor:pointer}
+@media (max-width:640px){.xp-t th:nth-child(4),.xp-t td:nth-child(4){display:none}}
+@media print{body.xp-open>*:not(.xp-ov){display:none!important}.xp-ov{position:static;overflow:visible}.xp-bar{display:none}.xp-t tr{break-inside:avoid}.xp-t a{color:#000}}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -330,7 +346,9 @@ function renderPerson(name) {
   if (!p) { location.hash = ''; return; }
   const back = el('button', 'back', '‹ กลับไปหน้ารายชื่อ'); back.type = 'button'; back.onclick = () => history.length > 1 ? history.back() : (location.hash = '');
   const pn = el('h2', 'pname', p.name); if (p.name === ME) pn.appendChild(meTag());
+  const bx = el('button', 'pexp', 'Export รายงาน'); bx.type = 'button'; bx.onclick = () => exportPerson(p);
   v.append(back, pn, el('div', 'pcenter', (home(p.name) || '—') + (unknown(p.name) ? ' · ไม่พบในทะเบียนพนักงาน (ศูนย์ประเมินจากงาน)' : '') + ' · ' + (S.month ? 'เดือน' + mLabel(S.month) : 'ทุกเดือน')));
+  if (ME && p.name === ME) v.appendChild(bx);  // export ได้เฉพาะรายงานของตัวเอง (แนบรายงาน PM)
   const st = el('div', 'stats');
   [['4.3','วันออกงาน', String(p.s43)],['4.4','ซิม', nf2.format(p.s44)],['4.5','วงจรใหม่/ใช้ต่อ', nf2.format(p.s45)],['4.6','อุปกรณ์', nf2.format(p.e46)],['4.6','เงินหนี้สูญ (บาท)', nfB.format(p.m46)]]
     .forEach(([a, b, x]) => { const s = el('div', 'stat'); const k = el('div', 'k'); k.append(el('b', null, a), document.createTextNode(b)); s.append(k, el('div', 'x', x)); st.appendChild(s); });
@@ -367,6 +385,78 @@ function renderPerson(name) {
   });
   v.appendChild(log);
   v.appendChild(el('div', 'foot', 'ตัวเลขบนป้ายคะแนน = ส่วนของคนนี้หลังหารตามจำนวนคนในทีม · 4.3 ได้วันละ 1 แต้มไม่ว่าจะออกกี่งาน'));
+}
+
+// ---------- Export รายงานส่วนบุคคล (แยกประเภทงาน + ลิงก์รูปหลักฐานต่องาน) ----------
+const EXP_TYPES = [
+  ['m46', '4.6 เงินหนี้สูญ', e => e.m46 > 0],
+  ['e46', '4.6 เก็บอุปกรณ์', e => e.e46 > 0 && !(e.m46 > 0)],
+  ['s45', '4.5 วงจรใหม่ / ชำระหนี้ใช้ต่อ / Net Add', e => e.s45 > 0 && !(e.m46 > 0) && !(e.e46 > 0)],
+  ['s44', '4.4 ขายซิม', e => e.s44 > 0 && !(e.s45 > 0) && !(e.m46 > 0) && !(e.e46 > 0)],
+  ['s43', '4.3 ออกงานภาคสนาม / กิจกรรม', e => e.s43 && !(e.s44 > 0) && !(e.s45 > 0) && !(e.m46 > 0) && !(e.e46 > 0)],
+  ['none', 'รายงานที่ไม่ได้คะแนน', e => !e.s43 && !(e.s44 > 0) && !(e.s45 > 0) && !(e.m46 > 0) && !(e.e46 > 0)],
+];
+function expGroups(p) {
+  return EXP_TYPES.map(([k, label, f]) => ({k, label, ev: p.ev.filter(f).sort((a, b) => a.d.localeCompare(b.d) || a.id.localeCompare(b.id))}))
+    .filter(g => g.ev.length);
+}
+function expCsv(p, period) {
+  const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+  const rows = [['ชื่อ', 'ศูนย์', 'ช่วงข้อมูล', 'ประเภทงาน', 'วันที่', 'เลขวงจร/งาน', 'ผลงาน', 'ผลจำแนก', 'ทีม (คน)',
+    '4.3', '4.4', '4.5', '4.6 อุปกรณ์', '4.6 เงิน (บาท)', 'จำนวนรูป', 'ลิงก์รูปหลักฐาน']];
+  expGroups(p).forEach(g => g.ev.forEach(e => {
+    const k = e.p.length || 1;
+    rows.push([p.name, home(p.name), period, g.label, e.d, e.t === 'c' ? e.id : 'กิจกรรม KPI ' + e.k, e.n, e.r || '', k,
+      e.s43 ? 1 : 0, +(e.s44 / k).toFixed(2), +(e.s45 / k).toFixed(2), +(e.e46 / k).toFixed(2), +(e.m46 / k).toFixed(2),
+      (e.img || []).length, (e.img || []).join('\n')]);
+  }));
+  return '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n');
+}
+function exportPerson(p) {
+  const period = S.month ? 'เดือน' + mLabel(S.month) : `${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0, 4) + 543}`;
+  const ov = el('div', 'xp-ov'); ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'รายงานส่วนบุคคล');
+  const bar = el('div', 'xp-bar');
+  const bPrint = el('button', 'xp-btn', 'พิมพ์ / บันทึก PDF'); bPrint.type = 'button'; bPrint.onclick = () => window.print();
+  const bCsv = el('button', 'xp-btn', 'ดาวน์โหลด Excel (CSV)'); bCsv.type = 'button';
+  const fname = `รายงาน_${p.name.replace(/\s+/g, '_')}_${S.month || 'ทั้งหมด'}.csv`;
+  bCsv.onclick = async () => {
+    const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+    if (dl) { try { await dl.save({filename: fname, data: expCsv(p, period)}); } catch (e) {} return; }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([expCsv(p, period)], {type: 'text/csv;charset=utf-8'}));
+    a.download = `รายงาน_${p.name.replace(/\s+/g, '_')}_${S.month || 'ทั้งหมด'}.csv`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  };
+  const bClose = el('button', 'xp-btn ghost', 'ปิด'); bClose.type = 'button';
+  bClose.onclick = () => { ov.remove(); document.body.classList.remove('xp-open'); };
+  bar.append(bPrint, bCsv, bClose);
+  const doc = el('div', 'xp-doc');
+  doc.append(el('div', 'xp-org', 'บตน.2 (ยล.) NT ยะลา · รายงานผลการปฏิบัติงานส่วนบุคคล (เอกสารแนบรายงาน PM)'), el('h1', null, p.name),
+    el('div', 'xp-sub', `${home(p.name) || '—'} · ${period}`));
+  const sum = el('table', 'xp-sum'); const tr1 = el('tr'), tr2 = el('tr');
+  [['4.3 วันออกงาน', String(p.s43)], ['4.4 ซิม', nf2.format(p.s44)], ['4.5 วงจร', nf2.format(p.s45)], ['4.6 อุปกรณ์', nf2.format(p.e46)], ['4.6 เงิน (บาท)', nfB.format(p.m46)]]
+    .forEach(([a, b]) => { tr1.appendChild(el('th', null, a)); tr2.appendChild(el('td', null, b)); });
+  sum.append(tr1, tr2); doc.appendChild(sum);
+  expGroups(p).forEach(g => {
+    doc.appendChild(el('h2', null, `${g.label} (${g.ev.length} งาน)`));
+    const t = el('table', 'xp-t');
+    const hr = el('tr'); ['วันที่', 'เลขวงจร/งาน', 'ผลงาน', 'คะแนนของคนนี้', 'รูปหลักฐาน'].forEach(h => hr.appendChild(el('th', null, h))); t.appendChild(hr);
+    g.ev.forEach(e => {
+      const k = e.p.length || 1; const r = el('tr');
+      r.appendChild(el('td', 'nw', dShort(e.d) + ' ' + (+e.d.slice(0, 4) + 543)));
+      r.appendChild(el('td', 'nw', e.t === 'c' ? e.id : 'KPI ' + e.k));
+      const w = el('td'); w.appendChild(el('div', null, e.n)); if (e.r) w.appendChild(el('div', 'xp-res', e.r));
+      w.appendChild(el('div', 'xp-team', k > 1 ? `ทีม ${k} คน: ${e.p.join(', ')}` : 'ทำคนเดียว / ไม่ระบุทีม')); r.appendChild(w);
+      const cs = chipsFor(e, k); r.appendChild(el('td', null, cs.length ? cs.join(' · ') : '—'));
+      const im = el('td', 'nw'); const L = e.img || [];
+      if (!L.length) im.textContent = 'ไม่มีรูป';
+      L.forEach((u, i) => { const a = el('a', null, L.length > 1 ? `รูป ${i + 1}` : 'ดูรูป'); a.href = u; a.target = '_blank'; a.rel = 'noopener'; im.appendChild(a); if (i < L.length - 1) im.appendChild(document.createTextNode(' ')); });
+      r.appendChild(im); t.appendChild(r);
+    });
+    doc.appendChild(t);
+  });
+  doc.appendChild(el('div', 'xp-foot', 'คะแนนหลังหารตามจำนวนคนในทีม · 4.3 ได้วันละ 1 แต้ม · 1 งานมีหลายรูปแสดงเป็นลิงก์รูป 1, 2, … (เปิดได้เฉพาะผู้ที่มีสิทธิ์ในโฟลเดอร์รูปบน Drive)'));
+  ov.append(bar, doc); document.body.appendChild(ov); document.body.classList.add('xp-open'); ov.scrollTop = 0;
 }
 
 function route() {
