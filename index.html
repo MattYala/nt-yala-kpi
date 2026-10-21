@@ -131,6 +131,7 @@ button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
 .viewer{font-size:12px;color:var(--ink-3);margin-top:2px}
 @keyframes pulse{from{opacity:.35}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.boot .dot{animation:none}}
+.cats{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}.cat{border:1px solid #d9dee5;border-radius:8px;padding:6px 10px;display:flex;gap:8px;font-size:13.5px}.cat .cn{font-family:var(--m);color:#1d4f7a}.ctag{font-size:11.5px;color:#5b6573;border:1px solid #d9dee5;border-radius:6px;padding:1px 6px;margin-left:6px}.ctrbox{margin:8px 0 12px;border:1px solid #d9dee5;border-radius:10px;padding:8px 12px}.ctrbox summary{cursor:pointer;font-weight:600}.ctab{width:100%;border-collapse:collapse;margin-top:8px;font-size:13.5px}.ctab th,.ctab td{border-bottom:1px solid #eef1f4;padding:6px;text-align:right}.ctab th:first-child,.ctab td:first-child{text-align:left}
 </style>
 
 
@@ -176,6 +177,7 @@ button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
       <select id="center" aria-label="ศูนย์"></select>
       <span class="count" id="count"></span>
     </div>
+    <div id="ctr" hidden></div>
     <div class="list" role="list" id="list"></div>
     <div class="foot">
       <p>คลิกชื่อเพื่อดูงานทั้งหมดของแต่ละคน · คะแนนนับตามหลักฐานในรายงาน LINE ตัดรายงานซ้ำแล้ว · ปิดชื่อและเบอร์โทรลูกค้าแล้ว · <span class="star"></span> = ไม่พบในทะเบียนพนักงาน</p>
@@ -252,10 +254,23 @@ const ME = allNames.find(n => norm(n) === norm(window.VIEWER.name)) || null;
 const meTag = () => el('span', 'me-tag', 'ผลงานของคุณ');
 
 // aggregate per person (for the selected month)
+const inPeriod = (d, per) => { if (!per) return true; if (per.startsWith('Q:')) { const [y, q] = per.slice(2).split('-').map(Number); const m = +d.slice(5, 7); return +d.slice(0, 4) === y && Math.ceil(m / 3) === q; } return d.startsWith(per); };
+// หมวดงาน (ใช้แสดงผลงานทั้งหมด ไม่เกี่ยวกับการคิดคะแนน)
+const CATS = [
+  ['debt', 'ติดตามหนี้ / เก็บอุปกรณ์', e => e.t === 'c'],
+  ['sale', 'ขายบริการ / Net Add', e => e.s45 > 0 || /Net Add|ขอใช้บริการ|ติดตั้งใหม่/.test(e.n)],
+  ['dealer', 'ตัวแทนจำหน่าย / ซิม / เติมเงิน', e => /Dealer|ดิลเล่อ|ตัวแทน|ซิม|เติมเงิน/.test(e.n + e.note)],
+  ['tech', 'ติดตั้ง / ซ่อม / โครงข่าย', e => /ติดตั้ง|ซ่อม|สาย|โครงข่าย|OFC|ODN|wifi|WiFi|เราเตอร์|server/i.test(e.n + e.note)],
+  ['event', 'ประชุม / กิจกรรม / พบหน่วยงาน', e => /ประชุม|สัมมนา|พิธี|จิตอาสา|ดอกไม้จันทน์|กิจกรรม|พบ|อบรม/.test(e.n + e.note)],
+  ['internal', 'งานภายในศูนย์', e => /ภายใน|ตัดสาย/.test(e.n + e.note)],
+  ['other', 'งานอื่น ๆ', e => true],
+];
+const catOf = e => (e._cat = e._cat || CATS.find(([, , f]) => f(e))[0]);
+const catLabel = k => CATS.find(c => c[0] === k)[1];
 function aggregate(month) {
   const P = new Map();
   DATA.events.forEach(e => {
-    if (month && !e.d.startsWith(month)) return;
+    if (!inPeriod(e.d, month)) return;
     const k = e.p.length || 1;
     e.p.forEach(n => {
       if (!P.has(n)) P.set(n, {name: n, days: new Set(), s44: 0, s45: 0, e46: 0, m46: 0, ev: []});
@@ -265,12 +280,11 @@ function aggregate(month) {
       p.s44 += e.s44 / k; p.s45 += e.s45 / k; p.e46 += e.e46 / k; p.m46 += e.m46 / k;
     });
   });
-  return [...P.values()].map(p => ({...p, s43: p.days.size}))
-    .filter(p => p.s43 || p.s44 || p.s45 || p.e46 || p.m46);
+  return [...P.values()].map(p => ({...p, s43: p.days.size}));
 }
 let people = aggregate('');
 const TH_MF = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
-const mLabel = m => { const [y, mm] = m.split('-').map(Number); return `${TH_MF[mm-1]} ${y+543}`; };
+const mLabel = m => { if (m.startsWith('Q:')) { const [y, q] = m.slice(2).split('-').map(Number); return `ไตรมาส ${q}/${y+543} (${TH_M[q*3-3]}–${TH_M[q*3-1]})`; } const [y, mm] = m.split('-').map(Number); return `${TH_MF[mm-1]} ${y+543}`; };
 const S = {q: '', center: '', month: '', sort: {k: 's43', dir: -1}};
 $('#period').textContent = `ข้อมูล ${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0,4)+543}`;
 const centers = [...new Set(people.map(p => home(p.name)).filter(Boolean))].sort((a,b) => a.localeCompare(b,'th'));
@@ -279,15 +293,30 @@ centers.forEach(c => sel.appendChild(new Option(c, c)));
 sel.onchange = () => { S.center = sel.value; renderList(); };
 const msel = $('#month'); msel.appendChild(new Option('ทุกเดือน', ''));
 [...new Set(DATA.events.map(e => e.d.slice(0, 7)))].sort().reverse().forEach(m => msel.appendChild(new Option(mLabel(m), m)));
+[...new Set(DATA.events.map(e => 'Q:' + e.d.slice(0, 4) + '-' + Math.ceil(+e.d.slice(5, 7) / 3)))].sort().reverse().forEach(q => msel.appendChild(new Option(mLabel(q), q)));
 msel.onchange = () => { S.month = msel.value; people = aggregate(S.month); renderPeriod(); renderList(); };
-function renderPeriod() { $('#period').textContent = S.month ? `เดือน${mLabel(S.month)}` : `ข้อมูล ${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0,4)+543}`; }
+function renderPeriod() { $('#period').textContent = S.month ? (S.month.startsWith('Q:') ? mLabel(S.month) : `เดือน${mLabel(S.month)}`) : `ข้อมูล ${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0,4)+543}`; }
 renderPeriod();
 $('#q').oninput = e => { S.q = e.target.value.trim(); renderList(); };
 
 const COLS = [['s43','4.3','วัน'],['s44','4.4','ซิม'],['s45','4.5','วงจร'],['e46','4.6','อุปกรณ์'],['m46','4.6 เงิน (บาท)','฿']];
 const fmt = (k, v) => k === 'm46' ? nfB.format(v) : (k === 's43' ? String(v) : nf2.format(v));
 
+const ADMINS = ['ธนวัฒน์พ้นชั่ว'];
+function renderCenters() {
+  const box = $('#ctr'); box.replaceChildren();
+  if (!ME || !ADMINS.includes(norm(ME))) { box.hidden = true; return; }
+  box.hidden = false;
+  const C = new Map();
+  DATA.events.forEach(e => { if (!inPeriod(e.d, S.month)) return;
+    const kpi = e.s43 || e.s44 || e.s45 || e.e46 || e.m46;
+    [...new Set(e.p.map(n => home(n) || 'ไม่ระบุศูนย์'))].forEach(c => { if (!C.has(c)) C.set(c, {all: 0, kpi: 0}); const r = C.get(c); r.all++; if (kpi) r.kpi++; }); });
+  const t = el('table', 'ctab'); const hr = el('tr'); ['ศูนย์', 'งานที่รายงาน', 'ภารกิจ KPI', 'งานหลัก/งานประจำ', 'สัดส่วน KPI'].forEach(h => hr.appendChild(el('th', null, h))); t.appendChild(hr);
+  [...C.entries()].sort((a, b) => b[1].all - a[1].all).forEach(([c, r]) => { const tr = el('tr'); [c, r.all, r.kpi, r.all - r.kpi, Math.round(r.kpi * 100 / r.all) + '%'].forEach(x => tr.appendChild(el('td', null, String(x)))); t.appendChild(tr); });
+  const d = el('details', 'ctrbox'); d.appendChild(el('summary', null, 'ภาพรวมรายศูนย์ (ผู้บริหาร)')); d.appendChild(t); d.appendChild(el('div', 'foot', 'นับจำนวนรายการงานต่อศูนย์ของสมาชิกในทีม · งาน 1 รายการที่มีหลายศูนย์นับให้ทุกศูนย์')); box.appendChild(d);
+}
 function renderList() {
+  renderCenters();
   const list = $('#list'); list.replaceChildren();
   const head = el('div', 'row head');
   const hb = (k, label, cls) => { const b = el('button', cls || '', label); b.type = 'button';
@@ -347,7 +376,7 @@ function renderPerson(name) {
   const back = el('button', 'back', '‹ กลับไปหน้ารายชื่อ'); back.type = 'button'; back.onclick = () => history.length > 1 ? history.back() : (location.hash = '');
   const pn = el('h2', 'pname', p.name); if (p.name === ME) pn.appendChild(meTag());
   const bx = el('button', 'pexp', 'Export รายงาน'); bx.type = 'button'; bx.onclick = () => exportPerson(p);
-  v.append(back, pn, el('div', 'pcenter', (home(p.name) || '—') + (unknown(p.name) ? ' · ไม่พบในทะเบียนพนักงาน (ศูนย์ประเมินจากงาน)' : '') + ' · ' + (S.month ? 'เดือน' + mLabel(S.month) : 'ทุกเดือน')));
+  v.append(back, pn, el('div', 'pcenter', (home(p.name) || '—') + (unknown(p.name) ? ' · ไม่พบในทะเบียนพนักงาน (ศูนย์ประเมินจากงาน)' : '') + ' · ' + (S.month ? (S.month.startsWith('Q:') ? '' : 'เดือน') + mLabel(S.month) : 'ทุกเดือน')));
   if (ME && p.name === ME) v.appendChild(bx);  // export ได้เฉพาะรายงานของตัวเอง (แนบรายงาน PM)
   const st = el('div', 'stats');
   [['4.3','วันออกงาน', String(p.s43)],['4.4','ซิม', nf2.format(p.s44)],['4.5','วงจรใหม่/ใช้ต่อ', nf2.format(p.s45)],['4.6','อุปกรณ์', nf2.format(p.e46)],['4.6','เงินหนี้สูญ (บาท)', nfB.format(p.m46)]]
@@ -355,7 +384,11 @@ function renderPerson(name) {
   v.appendChild(st);
 
   const dates = [...new Set(p.ev.map(e => e.d))].sort();
-  v.appendChild(el('h3', null, `วันที่มีรายงาน (${dates.length} วัน · ได้ 4.3 ${p.s43} วัน)`));
+  v.appendChild(el('h3', null, `ผลงานทั้งหมด (${p.ev.length} งาน · ${dates.length} วัน)`));
+  const cg = el('div', 'cats');
+  CATS.forEach(([k, label]) => { const n = p.ev.filter(e => catOf(e) === k).length; if (!n) return; const c = el('div', 'cat'); c.append(el('span', 'cl', label), el('span', 'cn', n + ' งาน')); cg.appendChild(c); });
+  v.appendChild(cg);
+  v.appendChild(el('h3', null, `วันที่มีรายงาน (${dates.length} วัน)`));
   const days = el('div', 'days');
   dates.forEach(d => { const c = el('span', 'day' + (p.days.has(d) ? ' on' : ''), dShort(d)); c.title = p.days.has(d) ? 'ได้ 4.3' : 'ไม่ได้ 4.3'; days.appendChild(c); });
   v.appendChild(days);
@@ -369,7 +402,7 @@ function renderPerson(name) {
     byDate.get(d).sort((a, b) => (a.t > b.t ? 1 : -1) || a.id.localeCompare(b.id)).forEach(e => {
       const k = e.p.length || 1;
       const it = el('div', 'item'); const h = el('div', 'h');
-      h.appendChild(el('span', 'ref', e.t === 'c' ? e.id : 'กิจกรรม KPI ' + e.k));
+      h.appendChild(el('span', 'ref', e.t === 'c' ? e.id : 'กิจกรรม KPI ' + e.k)); h.appendChild(el('span', 'ctag', catLabel(catOf(e))));
       if (e.t === 'c' && e.r) h.appendChild(el('span', 'res', e.r));
       it.appendChild(h);
       it.appendChild(el('div', 'txt', e.n));
@@ -397,7 +430,7 @@ const EXP_TYPES = [
   ['none', 'รายงานที่ไม่ได้คะแนน', e => !e.s43 && !(e.s44 > 0) && !(e.s45 > 0) && !(e.m46 > 0) && !(e.e46 > 0)],
 ];
 function expGroups(p) {
-  return EXP_TYPES.map(([k, label, f]) => ({k, label, ev: p.ev.filter(f).sort((a, b) => a.d.localeCompare(b.d) || a.id.localeCompare(b.id))}))
+  return CATS.map(([k, label]) => ({k, label, ev: p.ev.filter(e => catOf(e) === k).sort((a, b) => a.d.localeCompare(b.d) || a.id.localeCompare(b.id))}))
     .filter(g => g.ev.length);
 }
 function expCsv(p, period) {
@@ -413,7 +446,7 @@ function expCsv(p, period) {
   return '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n');
 }
 function exportPerson(p) {
-  const period = S.month ? 'เดือน' + mLabel(S.month) : `${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0, 4) + 543}`;
+  const period = S.month ? (S.month.startsWith('Q:') ? '' : 'เดือน') + mLabel(S.month) : `${dShort(DATA.range[0])} – ${dShort(DATA.range[1])} ${+DATA.range[1].slice(0, 4) + 543}`;
   const ov = el('div', 'xp-ov'); ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'รายงานส่วนบุคคล');
   const bar = el('div', 'xp-bar');
   const bPrint = el('button', 'xp-btn', 'พิมพ์ / บันทึก PDF'); bPrint.type = 'button'; bPrint.onclick = () => window.print();
@@ -431,7 +464,7 @@ function exportPerson(p) {
   bClose.onclick = () => { ov.remove(); document.body.classList.remove('xp-open'); };
   bar.append(bPrint, bCsv, bClose);
   const doc = el('div', 'xp-doc');
-  doc.append(el('div', 'xp-org', 'บตน.2 (ยล.) NT ยะลา · รายงานผลการปฏิบัติงานส่วนบุคคล (เอกสารแนบรายงาน PM)'), el('h1', null, p.name),
+  doc.append(el('div', 'xp-org', 'บตน.2 (ยล.) NT ยะลา · รายงานผลการปฏิบัติงานส่วนบุคคล — งานทั้งหมดที่รายงาน (ใช้ประกอบการประเมิน / แนบรายงาน PM)'), el('h1', null, p.name),
     el('div', 'xp-sub', `${home(p.name) || '—'} · ${period}`));
   const sum = el('table', 'xp-sum'); const tr1 = el('tr'), tr2 = el('tr');
   [['4.3 วันออกงาน', String(p.s43)], ['4.4 ซิม', nf2.format(p.s44)], ['4.5 วงจร', nf2.format(p.s45)], ['4.6 อุปกรณ์', nf2.format(p.e46)], ['4.6 เงิน (บาท)', nfB.format(p.m46)]]
