@@ -93,6 +93,14 @@ button.row:hover{background:var(--muted-bg)}
 .stat .k{font-size:12px;color:var(--ink-3)}
 .stat .k b{font-family:var(--m);font-weight:500;color:var(--ink-2);margin-right:4px}
 .stat .x{font-family:var(--m);font-size:clamp(20px,2.6vw,26px);font-weight:500;margin-top:2px;font-variant-numeric:tabular-nums}
+.mcwrap{margin:-6px 0 26px}.mcwrap .mcn{font-size:13px;color:var(--ink-3,#6b7280);margin:4px 0 10px}
+.mcgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.mcc{background:var(--paper,#fff);padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.mcc .k{font-size:12.5px;color:var(--ink-2,#4b5563)}.mcc .lv{font-size:26px;font-weight:600;font-family:var(--m)}
+.mcc .lv small{font-size:13px;font-weight:400;color:var(--ink-3,#6b7280)}.mcc .v{font-size:12.5px;font-family:var(--m);color:var(--ink-2,#4b5563)}
+.mcc .nx{font-size:12px;color:var(--ink-3,#6b7280)}
+.mcbar{display:flex;gap:3px;margin-top:2px}.mcbar i{flex:1;height:5px;border-radius:3px;background:var(--line)}.mcbar i.on{background:var(--accent,#f5c400)}
+@media (max-width:680px){.mcgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:680px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat:last-child{grid-column:1/-1}}
 h3{font-size:15px;font-weight:600;margin:0 0 10px}
 .days{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:28px}
@@ -369,6 +377,45 @@ function chipsFor(e, k) {
   return c;
 }
 
+
+// ===== MC (บันทึก บตน.2(ยล.)/510 ลว. 19 ส.ค. 69) =====
+const MC_TH = {act:[4,6,8,10,12], sn:[4,6,8,10,12], snSale:[8,12,16,20,24], debt:[1000,2000,3000,4000,5000], debtM:[2000,4000,6000,8000,10000]};
+const mcLvl = (v, th) => { let l = 0; th.forEach((t, i) => { if (Math.round(v*1e6)/1e6 >= t) l = i + 1; }); return l; };
+const mcDev = e => { if (!(e.e46 > 0)) return 0; const t = e.n || ''; const low = t.toLowerCase().replace(/\s/g,'');
+  if (low.includes('router+onu') || (low.includes('router') && low.includes('onu'))) return 2;
+  const m = t.match(/(?:อุปก\S*|router|onu|ip ?phone|ตัวอุปกรณ์)[^0-9\n]{0,25}?(\d)\s*(?:ตัว|ชุด)/i); return m ? +m[1] : 1; };
+function mcOf(name, month) {
+  const c = home(name); const sale = /ศูนย์บริการ|ศูนย์ขายและวิศวกรรม/.test(c); const debtC = /บริหารจัดการหนี้/.test(c);
+  const yr = (DATA.range[1] || '').slice(0, 4);
+  const acts = new Map(); let sim = 0, net = 0, money = 0, dev = 0;
+  DATA.events.forEach(e => { if (!e.p.includes(name) || e.d.slice(0,4) !== yr) return; const k = e.p.length || 1;
+    sim += e.s44 / k; net += e.s45 / k; money += e.m46 / k; dev += mcDev(e) / k;
+    if (e.s43) { if (!acts.has(e.d)) acts.set(e.d, new Set()); acts.get(e.d).add(e.t === 'c' ? 'route' : 'a:' + (e.n || '').slice(0, 40)); } });
+  const mo = month && !month.startsWith('Q:') ? month : (DATA.range[1] || '').slice(0, 7);
+  let actN = 0; acts.forEach((v, d) => { if (d.slice(0, 7) === mo) actN += Math.min(2, v.size); });
+  const dv = money + dev * 500;
+  const r = {mo, sale, debtC,
+    act: {v: actN, th: MC_TH.act, unit: 'ครั้ง'}, sim: {v: sim, th: sale ? MC_TH.snSale : MC_TH.sn, unit: 'ซิม'},
+    net: {v: net, th: sale ? MC_TH.snSale : MC_TH.sn, unit: 'วงจร'}, debt: {v: dv, th: debtC ? MC_TH.debtM : MC_TH.debt, unit: 'บาท', money, dev}};
+  ['act','sim','net','debt'].forEach(k => r[k].l = mcLvl(r[k].v, r[k].th));
+  r.avg = (r.act.l + r.sim.l + r.net.l + r.debt.l) / 4; return r;
+}
+function mcBlock(name) {
+  const m = mcOf(name, S.month); const w = el('div', 'mcwrap');
+  w.appendChild(el('h3', null, `ระดับ MC (ใช้กรอกระบบ PM) · เฉลี่ย ${nf2.format(m.avg)}`));
+  w.appendChild(el('div', 'mcn', `4.3 = เดือน${mLabel(m.mo)} (ครึ่งวัน = 1 ครั้ง) · 4.4–4.6 = สะสมปี ${+m.mo.slice(0,4)+543} ถึงข้อมูลล่าสุด · ตามบันทึก บตน.2(ยล.)/510`));
+  const g = el('div', 'mcgrid');
+  [['act','4.3 การมีส่วนร่วม'],['sim','4.4 ขยายฐาน SIM'],['net','4.5 Net Add'],['debt','4.6 หนี้ Inactive/อุปกรณ์']].forEach(([k, label]) => {
+    const x = m[k]; const c = el('div', 'mcc'); c.appendChild(el('div', 'k', label));
+    const lv = el('div', 'lv', 'ระดับ ' + x.l); c.appendChild(lv);
+    const bar = el('div', 'mcbar'); for (let i = 1; i <= 5; i++) bar.appendChild(el('i', i <= x.l ? 'on' : null)); c.appendChild(bar);
+    const val = k === 'debt' ? `${nfB.format(x.v)} บาท (เงิน ${nfB.format(x.money)} + อุปกรณ์ ${nf2.format(x.dev)} ตัว × 500)` : `${k === 'act' ? x.v : nf2.format(x.v)} ${x.unit}`;
+    c.appendChild(el('div', 'v', val));
+    const nxt = x.th[x.l]; c.appendChild(el('div', 'nx', nxt === undefined ? 'ถึงระดับสูงสุดแล้ว' : `อีก ${k === 'debt' ? nfB.format(nxt - x.v) : (k === 'act' ? nxt - x.v : nf2.format(nxt - x.v))} ${x.unit} → ระดับ ${x.l + 1}`));
+    g.appendChild(c); });
+  w.appendChild(g); return w;
+}
+
 function renderPerson(name) {
   const p = people.find(x => x.name === name);
   const v = $('#view-person'); v.replaceChildren();
@@ -382,6 +429,7 @@ function renderPerson(name) {
   [['4.3','วันออกงาน', String(p.s43)],['4.4','ซิม', nf2.format(p.s44)],['4.5','วงจรใหม่/ใช้ต่อ', nf2.format(p.s45)],['4.6','อุปกรณ์', nf2.format(p.e46)],['4.6','เงินหนี้สูญ (บาท)', nfB.format(p.m46)]]
     .forEach(([a, b, x]) => { const s = el('div', 'stat'); const k = el('div', 'k'); k.append(el('b', null, a), document.createTextNode(b)); s.append(k, el('div', 'x', x)); st.appendChild(s); });
   v.appendChild(st);
+  v.appendChild(mcBlock(p.name));
 
   const dates = [...new Set(p.ev.map(e => e.d))].sort();
   v.appendChild(el('h3', null, `ผลงานทั้งหมด (${p.ev.length} งาน · ${dates.length} วัน)`));
