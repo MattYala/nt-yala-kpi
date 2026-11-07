@@ -178,7 +178,7 @@ button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
       <span><b>4.4</b>ขายซิม (เลขหมาย)</span>
       <span><b>4.5</b>วงจรใหม่ / ชำระแล้วใช้ต่อ</span>
       <span><b>4.6</b>เก็บอุปกรณ์ · เงินหนี้สูญ</span>
-      <span style="color:var(--ink-3)">4.4–4.6 หารตามจำนวนคนในทีม</span>
+      <span style="color:var(--ink-3)">4.4 และ 4.6 เงิน หารตามจำนวนคนในทีม · 4.5 Net Add 1 SR = 1 คน · 4.6 อุปกรณ์ทุกคนในทีมได้เต็ม</span>
     </div>
     <div class="controls">
       <div class="search"><input id="q" type="search" placeholder="ค้นหาชื่อ" aria-label="ค้นหาชื่อ" autocomplete="off"></div>
@@ -286,7 +286,7 @@ function aggregate(month) {
       const p = P.get(n);
       p.ev.push(e);
       if (e.s43) p.days.add(e.d);
-      p.s44 += e.s44 / k; p.s45 += e.s45 / k; p.e46 += e.e46 / k; p.m46 += e.m46 / k;
+      p.s44 += e.s44 / k; p.s45 += e.s45 / k; p.e46 += e.e46; p.m46 += e.m46 / k;
     });
   });
   return [...P.values()].map(p => ({...p, s43: p.days.size}));
@@ -373,7 +373,7 @@ function chipsFor(e, k) {
   if (e.s43) c.push('4.3 ออกงาน');
   if (e.s44) c.push(`4.4 ซิม ${nf2.format(e.s44 / k)}`);
   if (e.s45) c.push(`4.5 ${nf2.format(e.s45 / k)}`);
-  if (e.e46) c.push(`4.6 อุปกรณ์ ${nf2.format(e.e46 / k)}`);
+  if (e.e46) c.push(`4.6 อุปกรณ์ ${nf2.format(e.e46)}`);
   if (e.m46) c.push(`4.6 ฿${nfB.format(e.m46 / k)}`);
   return c;
 }
@@ -391,7 +391,7 @@ function mcOf(name, month) {
   const acts = new Map(); let sim = 0, net = 0, money = 0, dev = 0;
   const moX = month && !month.startsWith('Q:') ? month : (DATA.range[1] || '').slice(0, 7);
   DATA.events.forEach(e => { if (!e.p.includes(name) || e.d.slice(0,4) !== yr) return; const k = e.p.length || 1;
-    if (e.d.slice(0, 7) <= moX) { sim += e.s44 / k; net += e.s45 / k; money += e.m46 / k; dev += mcDev(e) / k; }
+    if (e.d.slice(0, 7) <= moX) { sim += e.s44 / k; net += e.s45 / k; money += e.m46 / k; dev += mcDev(e); }
     if (e.s43) { if (!acts.has(e.d)) acts.set(e.d, new Set()); acts.get(e.d).add(e.t === 'c' ? 'route' : 'a:' + (e.n || '').slice(0, 40)); } });
   const mo = month && !month.startsWith('Q:') ? month : (DATA.range[1] || '').slice(0, 7);
   let actN = 0; acts.forEach((v, d) => { if (d.slice(0, 7) === mo) actN += Math.min(2, v.size); });
@@ -473,7 +473,7 @@ function renderPerson(name) {
     g.appendChild(items); log.appendChild(g);
   });
   v.appendChild(log);
-  v.appendChild(el('div', 'foot', 'ตัวเลขบนป้ายคะแนน = ส่วนของคนนี้หลังหารตามจำนวนคนในทีม · 4.3 ได้วันละ 1 แต้มไม่ว่าจะออกกี่งาน'));
+  v.appendChild(el('div', 'foot', 'ตัวเลขบนป้ายคะแนน = ส่วนของคนนี้ (เงินหารตามจำนวนคนในทีม · อุปกรณ์ได้เต็มทุกคน) · 4.3 ได้วันละ 1 แต้มไม่ว่าจะออกกี่งาน'));
 }
 
 // ---------- Export รายงานส่วนบุคคล (แยกประเภทงาน + ลิงก์รูปหลักฐานต่องาน) ----------
@@ -496,7 +496,7 @@ function expCsv(p, period) {
   expGroups(p).forEach(g => g.ev.forEach(e => {
     const k = e.p.length || 1;
     rows.push([p.name, home(p.name), period, g.label, e.d, e.t === 'c' ? e.id : 'กิจกรรม KPI ' + e.k, e.n, e.r || '', k,
-      e.s43 ? 1 : 0, +(e.s44 / k).toFixed(2), +(e.s45 / k).toFixed(2), +(e.e46 / k).toFixed(2), +(e.m46 / k).toFixed(2),
+      e.s43 ? 1 : 0, +(e.s44 / k).toFixed(2), +(e.s45 / k).toFixed(2), +(e.e46).toFixed(2), +(e.m46 / k).toFixed(2),
       (e.img || []).length, (e.img || []).join('\n')]);
   }));
   return '﻿' + rows.map(r => r.map(q).join(',')).join('\r\n');
@@ -544,7 +544,7 @@ function exportPerson(p) {
     });
     doc.appendChild(t);
   });
-  doc.appendChild(el('div', 'xp-foot', 'คะแนนหลังหารตามจำนวนคนในทีม · 4.3 ได้วันละ 1 แต้ม · 1 งานมีหลายรูปแสดงเป็นลิงก์รูป 1, 2, … (เปิดได้เฉพาะผู้ที่มีสิทธิ์ในโฟลเดอร์รูปบน Drive)'));
+  doc.appendChild(el('div', 'xp-foot', 'เงิน 4.6 หารตามจำนวนคนในทีม · อุปกรณ์ 4.6 ทุกคนในทีมได้เต็ม · 4.3 ได้วันละ 1 แต้ม · 1 งานมีหลายรูปแสดงเป็นลิงก์รูป 1, 2, … (เปิดได้เฉพาะผู้ที่มีสิทธิ์ในโฟลเดอร์รูปบน Drive)'));
   ov.append(bar, doc); document.body.appendChild(ov); document.body.classList.add('xp-open'); ov.scrollTop = 0;
 }
 
