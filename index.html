@@ -141,6 +141,19 @@ button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
 @keyframes pulse{from{opacity:.35}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){.boot .dot{animation:none}}
 .cats{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}.cat{border:1px solid #d9dee5;border-radius:8px;padding:6px 10px;display:flex;gap:8px;font-size:13.5px}.cat .cn{font-family:var(--m);color:#1d4f7a}.ctag{font-size:11.5px;color:#5b6573;border:1px solid #d9dee5;border-radius:6px;padding:1px 6px;margin-left:6px}.ctrbox{margin:8px 0 12px;border:1px solid #d9dee5;border-radius:10px;padding:8px 12px}.ctrbox summary{cursor:pointer;font-weight:600}.ctab{width:100%;border-collapse:collapse;margin-top:8px;font-size:13.5px}.ctab th,.ctab td{border-bottom:1px solid #eef1f4;padding:6px;text-align:right}.ctab th:first-child,.ctab td:first-child{text-align:left}
+.rk-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.rk-link{font:inherit;font-size:14px;padding:8px 14px;border-radius:999px;border:1px solid var(--ink);background:var(--accent);color:var(--accent-ink);cursor:pointer;font-weight:600}
+.rk-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.rk-tabs button{font:inherit;font-size:14px;padding:7px 12px;border-radius:8px;border:1px solid var(--ink-3);background:transparent;color:var(--ink);cursor:pointer}
+.rk-tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg,#fff);border-color:var(--ink)}
+.rk-row{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;padding:9px 10px;border-bottom:1px solid var(--ink-3)}
+.rk-row .no{font-weight:700;font-size:18px;text-align:center}
+.rk-row.t1 .no,.rk-row.t2 .no,.rk-row.t3 .no{background:var(--accent);border-radius:8px;color:var(--accent-ink)}
+.rk-row .nm{font-weight:600}.rk-row .ct{font-size:12px;color:var(--ink-2)}
+.rk-row .v{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.rk-row.me{background:var(--accent-soft)}
+.rk-os{font-size:11px;border:1px solid var(--ink-3);border-radius:4px;padding:0 4px;margin-left:6px;color:var(--ink-2)}
+.rk-note{font-size:12px;color:var(--ink-2);margin:8px 0}
 </style>
 
 
@@ -170,6 +183,7 @@ button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
       <div>
         <div class="kicker">NT ส่วนขายและบริการลูกค้า ยะลา</div>
         <h1>คะแนนรายบุคคล KPI 4.3–4.6</h1>
+        <button type="button" class="rk-link" id="go-rank">🏆 ดู Ranking แยกหัวข้อ</button>
       </div>
       <div><div class="period" id="period"></div><div class="viewer" id="viewer"></div></div>
     </header>
@@ -194,6 +208,7 @@ button.row.me:hover{background:var(--accent-soft);filter:brightness(.97)}
   </div>
 
   <div id="view-person" hidden></div>
+  <div id="view-rank" hidden></div>
 </div>
 
 
@@ -312,6 +327,24 @@ const COLS = [['s43','4.3','วัน'],['s44','4.4','ซิม'],['s45','4.5','
 const fmt = (k, v) => k === 'm46' ? nfB.format(v) : (k === 's43' ? String(v) : nf2.format(v));
 
 const ADMINS = ['ธนวัฒน์พ้นชั่ว'];
+// ผจ.ศูนย์ export รายงานพนักงานในศูนย์ตัวเองได้ · ผส./ช.ผส. export ได้ทุกคน (พี่เมท 11/11/69)
+const EXPORT_ALL = ['บุญชนะเพ่งพิโรจ', 'ธนวัฒน์พ้นชั่ว', 'สุชาติแก้วเทวดา', 'รองรัตน์ภาคธีร์ธวัช'];
+const CENTRE_MGR = {
+  'ประภากรพรหมโลก': 'ศูนย์สนับสนุน',
+  'จารึกแก้วจันทร์': 'ศูนย์บริหารจัดการหนี้',
+  'สมชายอาบา': 'ศูนย์ขายและวิศวกรรมบริการ',
+  'สุชาติพรหมเลข': 'ศูนย์ตอนนอก',
+  'อับดุลเล๊าะเซ็ง': 'ศูนย์บริการยะลา',
+  'อารมย์ทองซุ่นห่อ': 'ศูนย์บริการเบตง'
+};
+const canExport = name => {
+  if (!ME) return false;
+  if (name === ME) return true;
+  const me = norm(ME);
+  if (EXPORT_ALL.includes(me)) return true;
+  const c = CENTRE_MGR[me];
+  return !!c && home(name).indexOf(c) === 0;
+};
 function renderCenters() {
   const box = $('#ctr'); box.replaceChildren();
   if (!ME || !ADMINS.includes(norm(ME))) { box.hidden = true; return; }
@@ -432,7 +465,7 @@ function renderPerson(name) {
   const pn = el('h2', 'pname', p.name); if (p.name === ME) pn.appendChild(meTag());
   const bx = el('button', 'pexp', 'Export รายงาน'); bx.type = 'button'; bx.onclick = () => exportPerson(p);
   v.append(back, pn, el('div', 'pcenter', (home(p.name) || '—') + (unknown(p.name) ? ' · ไม่พบในทะเบียนพนักงาน (ศูนย์ประเมินจากงาน)' : '') + ' · ' + (S.month ? (S.month.startsWith('Q:') ? '' : 'เดือน') + mLabel(S.month) : 'ทุกเดือน')));
-  if (ME && p.name === ME) v.appendChild(bx);  // export ได้เฉพาะรายงานของตัวเอง (แนบรายงาน PM)
+  if (canExport(p.name)) v.appendChild(bx);  // ตัวเอง + ผจ.ศูนย์ (พนักงานในศูนย์) + ผส./ช.ผส. (ทุกคน)
   const st = el('div', 'stats');
   [['4.3','วันออกงาน', String(p.s43)],['4.4','ซิม', nf2.format(p.s44)],['4.5','วงจรใหม่/ใช้ต่อ', nf2.format(p.s45)],['4.6','อุปกรณ์', nf2.format(p.e46)],['4.6','เงินหนี้สูญ (บาท)', nfB.format(p.m46)]]
     .forEach(([a, b, x]) => { const s = el('div', 'stat'); const k = el('div', 'k'); k.append(el('b', null, a), document.createTextNode(b)); s.append(k, el('div', 'x', x)); st.appendChild(s); });
@@ -518,7 +551,15 @@ function exportPerson(p) {
   };
   const bClose = el('button', 'xp-btn ghost', 'ปิด'); bClose.type = 'button';
   bClose.onclick = () => { ov.remove(); document.body.classList.remove('xp-open'); };
-  bar.append(bPrint, bCsv, bClose);
+  const xm = el('select', 'xp-btn'); xm.setAttribute('aria-label', 'เลือกช่วงรายงาน');
+  [...msel.options].forEach(o => xm.appendChild(new Option(o.text, o.value)));
+  xm.value = S.month || '';
+  xm.onchange = () => {
+    S.month = xm.value; msel.value = xm.value; people = aggregate(S.month); renderPeriod(); renderList();
+    const np = people.find(q => q.name === p.name) || {name: p.name, days: new Set(), s43: 0, s44: 0, s45: 0, e46: 0, m46: 0, ev: []};
+    ov.remove(); document.body.classList.remove('xp-open'); exportPerson(np);
+  };
+  bar.append(xm, bPrint, bCsv, bClose);
   const doc = el('div', 'xp-doc');
   doc.append(el('div', 'xp-org', 'บตน.2 (ยล.) NT ยะลา · รายงานผลการปฏิบัติงานส่วนบุคคล — งานทั้งหมดที่รายงาน (ใช้ประกอบการประเมิน / แนบรายงาน PM)'), el('h1', null, p.name),
     el('div', 'xp-sub', `${home(p.name) || '—'} · ${period}`));
@@ -548,11 +589,70 @@ function exportPerson(p) {
   ov.append(bar, doc); document.body.appendChild(ov); document.body.classList.add('xp-open'); ov.scrollTop = 0;
 }
 
+
+// ---------- Ranking แยกหัวข้อ (ทุกคนเห็น · พี่เมท 11/11/69) ----------
+// 4.6 รวม = เงินหนี้ (หารทีม) + อุปกรณ์ × 500 บาท (อุปกรณ์ทุกคนในทีมได้เต็ม) ตามบันทึก บตน.2(ยล.)/510
+const OSSET = new Set((DATA.os || []).map(norm));
+const isOS = n => OSSET.has(norm(n));
+const wkStart = d => { const t = new Date(d + 'T00:00:00Z'); const w = (t.getUTCDay() + 6) % 7; t.setUTCDate(t.getUTCDate() - w); return t.toISOString().slice(0, 10); };
+const addD = (d, n) => { const t = new Date(d + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); };
+const RK = {per: '', grp: 'all', k: 'm46x'};
+const RKK = [['s43', '4.3 กิจกรรม', 'วัน'], ['s44', '4.4 ขาย SIM', 'เลขหมาย'], ['s45', '4.5 Net Add', 'วงจร'], ['m46x', '4.6 หนี้+อุปกรณ์', 'บาท']];
+function rkPeriods() {
+  const out = [['Y:' + DATA.range[1].slice(0, 4), 'ทั้งปี ' + (+DATA.range[1].slice(0, 4) + 543)]];
+  const last = DATA.range[1].slice(0, 10);
+  const wks = [...new Set(DATA.events.map(e => wkStart(e.d)))].filter(w => w <= last).sort().reverse().slice(0, 8);
+  wks.forEach(w => out.push(['W:' + w, `สัปดาห์ ${dShort(w)} – ${dShort(addD(w, 6))}`]));
+  [...new Set(DATA.events.map(e => e.d.slice(0, 7)))].sort().reverse().forEach(m => out.push([m, 'เดือน' + mLabel(m)]));
+  return out;
+}
+const rkIn = (d, per) => per.startsWith('Y:') ? d.slice(0, 4) === per.slice(2) : per.startsWith('W:') ? (d >= per.slice(2) && d <= addD(per.slice(2), 6)) : d.slice(0, 7) === per;
+function rkAgg(per) {
+  const P = new Map();
+  DATA.events.forEach(e => { if (!rkIn(e.d, per) || !e.p.length) return; const k = e.p.length; const dv = mcDev(e);
+    e.p.forEach(n => { if (!P.has(n)) P.set(n, {name: n, days: new Set(), s44: 0, s45: 0, m46: 0, dev: 0});
+      const p = P.get(n); if (e.s43) p.days.add(e.d); p.s44 += e.s44 / k; p.s45 += e.s45 / k; p.m46 += e.m46 / k; p.dev += dv; }); });
+  return [...P.values()].map(p => ({...p, s43: p.days.size, m46x: p.m46 + p.dev * 500}));
+}
+function renderRank() {
+  const v = $('#view-rank'); v.replaceChildren();
+  const pers = rkPeriods(); if (!RK.per) RK.per = (pers[1] || pers[0])[0];
+  const top = el('div', 'rk-top'); const back = el('button', 'back', '‹ กลับหน้าคะแนนรายบุคคล'); back.type = 'button'; back.onclick = () => { location.hash = ''; };
+  top.append(back); v.appendChild(top);
+  v.appendChild(el('h1', null, 'Ranking KPI บตน.2 (ยล.)'));
+  const ps = el('select'); ps.setAttribute('aria-label', 'ช่วงเวลา'); pers.forEach(([a, b]) => ps.appendChild(new Option(b, a))); ps.value = RK.per;
+  ps.onchange = () => { RK.per = ps.value; renderRank(); }; v.appendChild(ps);
+  const mk = (arr, key, label) => { const t = el('div', 'rk-tabs'); t.setAttribute('role', 'group'); t.setAttribute('aria-label', label);
+    arr.forEach(([a, b]) => { const bt = el('button', null, b); bt.type = 'button'; bt.setAttribute('aria-pressed', RK[key] === a ? 'true' : 'false'); bt.onclick = () => { RK[key] = a; renderRank(); }; t.appendChild(bt); }); return t; };
+  v.appendChild(mk(RKK.map(x => [x[0], x[1]]), 'k', 'หัวข้อ'));
+  v.appendChild(mk([['all', 'ทั้งหมด'], ['NT', 'พนักงาน NT'], ['OS', 'พนักงาน OS']], 'grp', 'กลุ่ม'));
+  const kk = RKK.find(x => x[0] === RK.k);
+  const rows = rkAgg(RK.per).filter(p => (RK.grp === 'all' || (RK.grp === 'OS') === isOS(p.name)) && p[RK.k] > 0).sort((a, b) => b[RK.k] - a[RK.k] || a.name.localeCompare(b.name, 'th'));
+  const note = {s43: 'จำนวนวันที่ออกงานภาคสนาม/กิจกรรม (1 วัน/คน ไม่หาร)', s44: 'ซิมขายตรงให้ลูกค้าที่มีหลักฐานเลขหมาย (หารทีม)', s45: 'Net Add 1 SR = 1 คน ตามรายการฟารีดา', m46x: 'เงินหนี้ Inactive (หารทีม) + อุปกรณ์ตัวละ 500 บาท (ทุกคนในทีมได้เต็ม) ตามบันทึก 510'}[RK.k];
+  v.appendChild(el('div', 'rk-note', `${kk[1]} · ${note} · คะแนนเท่ากันได้อันดับเดียวกัน`));
+  const list = el('div'); list.setAttribute('role', 'list');
+  let rank = 0, prev = null;
+  rows.forEach((p, i) => { const val = +p[RK.k].toFixed(2); if (val !== prev) { rank = i + 1; prev = val; }
+    const r = el('div', 'rk-row' + (rank <= 3 ? ' t' + rank : '') + (p.name === ME ? ' me' : '')); r.setAttribute('role', 'listitem');
+    const who = el('div'); const nm = el('div', 'nm', p.name); if (isOS(p.name)) nm.appendChild(el('span', 'rk-os', 'OS')); if (p.name === ME) nm.appendChild(meTag());
+    who.append(nm, el('div', 'ct', home(p.name) || '—'));
+    const vtxt = RK.k === 'm46x' ? '฿' + nfB.format(p.m46x) + (p.dev ? ` (อุปกรณ์ ${nf2.format(p.dev)})` : '') : nf2.format(p[RK.k]) + ' ' + kk[2];
+    r.append(el('div', 'no', String(rank)), who, el('div', 'v', vtxt));
+    r.onclick = () => { location.hash = 'p=' + encodeURIComponent(p.name); }; r.style.cursor = 'pointer';
+    list.appendChild(r); });
+  if (!rows.length) list.appendChild(el('div', 'empty', 'ยังไม่มีผลงานในหัวข้อนี้ช่วงนี้'));
+  v.appendChild(list);
+  v.appendChild(el('div', 'rk-note', `ข้อมูลถึง ${dShort(DATA.range[1])} · อัปเดต Ranking ทุกสัปดาห์ (รอบจันทร์–อาทิตย์) · แตะชื่อเพื่อดูงานทั้งหมด`));
+}
 function route() {
   const m = location.hash.match(/^#p=(.+)$/);
+  $('#view-rank').hidden = true;
+  if (/^#rank/.test(location.hash)) { $('#view-list').hidden = true; $('#view-person').hidden = true; $('#view-rank').hidden = false; renderRank(); window.scrollTo(0, 0); return; }
   if (m) { $('#view-list').hidden = true; $('#view-person').hidden = false; renderPerson(decodeURIComponent(m[1])); window.scrollTo(0, 0); }
   else { $('#view-person').hidden = true; $('#view-list').hidden = false; renderList(); }
 }
+$('#go-rank').onclick = () => { location.hash = 'rank'; };
+if (/(^|[?&#])(view=rank|liff\.state=[^&]*rank)/.test(location.search + location.hash) && !/^#rank/.test(location.hash)) location.hash = 'rank';
 window.addEventListener('hashchange', route);
 route();
 
